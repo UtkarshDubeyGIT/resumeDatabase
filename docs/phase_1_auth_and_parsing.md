@@ -17,10 +17,14 @@ Build the entry point of the Resumint application, allowing users to securely au
 3. **First-Time Setup (PDF Resume Upload)**:
    - The user is presented with a file upload zone supporting drag-and-drop for PDF files (max 5MB).
    - A loading state appears showing that the system is extracting their information.
-4. **Initial Profile Form (Extracted Data Preview)**:
-   - The system displays the extracted data categorized into sections (Contact, Education, Experience, Projects, Skills).
-   - The user reviews, updates, or adds details, then saves to complete the onboarding.
-   - On save, redirect to `/dashboard`.
+4. **Multi-Step Profile Building**:
+   - **Step 1**: PDF upload → AI parses into structured sections (existing flow).
+   - **Step 2**: Add experience entries via AI-assisted component (paste descriptions, AI generates bullet points, select to keep).
+   - **Step 3**: Add skills via AI-assisted categorization (free text → AI categorizes into languages/frameworks/tools).
+   - **Step 4**: GitHub integration / project import (optional, skippable).
+   - **Step 5**: Review all sections and save.
+   - Each step can be skipped. On save, redirect to `/dashboard`.
+   - *See `docs/data_saving_planning.md` for the Universal AI-Assisted Content Creation specification.*
 
 ---
 

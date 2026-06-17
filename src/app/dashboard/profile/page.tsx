@@ -4,6 +4,10 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState, useCallback } from "react"
 import { toast } from "sonner"
 import { computeCompleteness, completenessBg, completenessColor, completenessHint } from "@/lib/profile-utils"
+import { Field } from "@/components/ui/field"
+import { SectionCard } from "@/components/ui/section-card"
+import { BulletList } from "@/components/ui/bullet-list"
+import { AIAssistedContent } from "@/components/ai-assisted-content"
 
 type Contact = { phone: string | null; linkedin: string | null; github: string | null; portfolio: string | null }
 
@@ -25,6 +29,13 @@ type Profile = {
 }
 
 const emptyContact: Contact = { phone: "", linkedin: "", github: "", portfolio: "" }
+
+function parseYear(value: string): number | null {
+  if (!value) return null
+  const trimmed = value.trim()
+  if (!/^\d{4}$/.test(trimmed)) return null
+  return Number(trimmed)
+}
 
 const tabs = ["contact", "education", "experience", "projects", "skills", "integrations"] as const
 type Tab = (typeof tabs)[number]
@@ -180,29 +191,10 @@ export default function ProfilePage() {
           <IntegrationsEditor
             githubUsername={profile.githubUsername}
             onGithubUsernameChange={(v) => updateNested("githubUsername", v)}
+            onAddProject={(proj) => updateNested("projects", [...(profile?.projects ?? []), proj])}
           />
         )}
       </div>
-    </div>
-  )
-}
-
-function Field({ label, value, onChange, placeholder }: {
-  label: string
-  value: string | null
-  onChange: (v: string) => void
-  placeholder?: string
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium text-muted-foreground">{label}</label>
-      <input
-        type="text"
-        value={value ?? ""}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary"
-      />
     </div>
   )
 }
@@ -244,8 +236,8 @@ function EducationEditor({ data, onChange }: { data: Education[]; onChange: (d: 
               <Field label="Degree" value={item.degree} onChange={(v) => update(i, "degree", v)} />
               <Field label="GPA" value={item.gpa} onChange={(v) => update(i, "gpa", v || null)} />
               <div className="flex gap-2">
-                <Field label="Start Year" value={item.startYear?.toString() ?? null} onChange={(v) => update(i, "startYear", v ? Number(v) : null)} />
-                <Field label="End Year" value={item.endYear?.toString() ?? null} onChange={(v) => update(i, "endYear", v ? Number(v) : null)} />
+                <Field label="Start Year" value={item.startYear?.toString() ?? null} onChange={(v) => update(i, "startYear", parseYear(v))} />
+                <Field label="End Year" value={item.endYear?.toString() ?? null} onChange={(v) => update(i, "endYear", parseYear(v))} />
               </div>
             </div>
           </div>
@@ -262,6 +254,11 @@ function EducationEditor({ data, onChange }: { data: Education[]; onChange: (d: 
 }
 
 function ExperienceEditor({ data, onChange }: { data: Experience[]; onChange: (d: Experience[]) => void }) {
+  const [aiAssistIndex, setAiAssistIndex] = useState<number | null>(null)
+  const [aiAddOpen, setAiAddOpen] = useState(false)
+  const [aiAddInput, setAiAddInput] = useState("")
+  const [aiAddLoading, setAiAddLoading] = useState(false)
+  const [aiAddError, setAiAddError] = useState<string | null>(null)
   const add = () => onChange([...data, { company: "", role: "", startDate: null, endDate: null, bullets: [""] }])
   const remove = (i: number) => onChange(data.filter((_, idx) => idx !== i))
   const update = (i: number, field: keyof Experience, value: string | string[] | null) => {
@@ -314,6 +311,11 @@ function ExperienceEditor({ data, onChange }: { data: Experience[]; onChange: (d
                   <path d="M8 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4Zm8 0a2 2 0 1 1 0-4 2 2 0 0 1 0 4ZM8 14a2 2 0 1 1 0-4 2 2 0 0 1 0 4Zm8 0a2 2 0 1 1 0-4 2 2 0 0 1 0 4ZM8 22a2 2 0 1 1 0-4 2 2 0 0 1 0 4Zm8 0a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z" />
                 </svg>
               </span>
+              <button onClick={() => setAiAssistIndex(aiAssistIndex === i ? null : i)} className="text-primary hover:text-primary-dark" title="AI Assist">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+                </svg>
+              </button>
               <button onClick={() => remove(i)} className="text-muted-foreground hover:text-error">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -333,20 +335,115 @@ function ExperienceEditor({ data, onChange }: { data: Experience[]; onChange: (d
                 onChange={(bullets) => update(i, "bullets", bullets)}
               />
             </div>
+            {aiAssistIndex === i && (
+              <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                <AIAssistedContent
+                  section="experience"
+                  onAccept={(items) => {
+                    const bullets = items as string[]
+                    update(i, "bullets", [...item.bullets, ...bullets])
+                    setAiAssistIndex(null)
+                  }}
+                  existingItems={item.bullets}
+                  context={{ company: item.company, role: item.role, section: "experience" }}
+                  placeholder="Describe your work at this role..."
+                  label="AI-assist: generate more bullet points"
+                />
+              </div>
+            )}
           </div>
         ))}
       </div>
-      <button onClick={add} className="mt-4 flex items-center gap-2 text-sm font-medium text-primary hover:underline">
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-        </svg>
-        Add Experience
-      </button>
+      <div className="mt-4 flex gap-2">
+        <button onClick={add} className="flex items-center gap-2 text-sm font-medium text-primary hover:underline">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          Add Experience
+        </button>
+        <button
+          onClick={() => { setAiAddOpen(!aiAddOpen); setAiAddError(null); setAiAddInput("") }}
+          className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+          </svg>
+          Add with AI
+        </button>
+      </div>
+
+      {aiAddOpen && (
+        <div className="mt-4 space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+          <p className="text-sm font-medium text-foreground">Add experience with AI</p>
+          <textarea
+            value={aiAddInput}
+            onChange={(e) => setAiAddInput(e.target.value)}
+            placeholder="Describe your work experience (e.g. 'I interned at Google last summer working on the search team...')"
+            rows={3}
+            className="w-full rounded-xl border border-border bg-background p-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+          />
+          {aiAddError && (
+            <div className="rounded-lg bg-error/10 p-3 text-sm text-error">{aiAddError}</div>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={async () => {
+                if (!aiAddInput.trim()) return
+                setAiAddLoading(true)
+                setAiAddError(null)
+                try {
+                  const res = await fetch("/api/ai/generate-bullets", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ section: "experience_entry", rawInput: aiAddInput }),
+                  })
+                  if (!res.ok) {
+                    const err = await res.json()
+                    throw new Error(err.error || "Generation failed")
+                  }
+                  const result = await res.json()
+                  onChange([
+                    ...data,
+                    {
+                      company: result.company || "",
+                      role: result.role || "",
+                      startDate: result.startDate || null,
+                      endDate: result.endDate || null,
+                      bullets: result.bulletPoints || [],
+                    },
+                  ])
+                  setAiAddOpen(false)
+                  setAiAddInput("")
+                } catch (e) {
+                  setAiAddError(e instanceof Error ? e.message : "Something went wrong")
+                } finally {
+                  setAiAddLoading(false)
+                }
+              }}
+              disabled={!aiAddInput.trim() || aiAddLoading}
+              className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+            >
+              {aiAddLoading ? "Generating..." : "Generate"}
+            </button>
+            <button
+              onClick={() => { setAiAddOpen(false); setAiAddError(null); setAiAddInput("") }}
+              className="rounded-full border border-border px-5 py-2 text-sm font-medium transition-colors hover:bg-muted"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </SectionCard>
   )
 }
 
 function ProjectsEditor({ data, onChange }: { data: Project[]; onChange: (d: Project[]) => void }) {
+  const [aiAssistIndex, setAiAssistIndex] = useState<number | null>(null)
+  const [aiAddOpen, setAiAddOpen] = useState(false)
+  const [aiAddInput, setAiAddInput] = useState("")
+  const [aiAddLoading, setAiAddLoading] = useState(false)
+  const [aiAddError, setAiAddError] = useState<string | null>(null)
   const add = () => onChange([...data, { title: "", techStack: [], bullets: [""], url: null }])
   const remove = (i: number) => onChange(data.filter((_, idx) => idx !== i))
   const update = (i: number, field: keyof Project, value: string | string[] | null) => {
@@ -399,6 +496,11 @@ function ProjectsEditor({ data, onChange }: { data: Project[]; onChange: (d: Pro
                   <path d="M8 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4Zm8 0a2 2 0 1 1 0-4 2 2 0 0 1 0 4ZM8 14a2 2 0 1 1 0-4 2 2 0 0 1 0 4Zm8 0a2 2 0 1 1 0-4 2 2 0 0 1 0 4ZM8 22a2 2 0 1 1 0-4 2 2 0 0 1 0 4Zm8 0a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z" />
                 </svg>
               </span>
+              <button onClick={() => setAiAssistIndex(aiAssistIndex === i ? null : i)} className="text-primary hover:text-primary-dark" title="AI Assist">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+                </svg>
+              </button>
               <button onClick={() => remove(i)} className="text-muted-foreground hover:text-error">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -426,20 +528,114 @@ function ProjectsEditor({ data, onChange }: { data: Project[]; onChange: (d: Pro
                 onChange={(bullets) => update(i, "bullets", bullets)}
               />
             </div>
+            {aiAssistIndex === i && (
+              <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                <AIAssistedContent
+                  section="projects"
+                  onAccept={(items) => {
+                    const bullets = items as string[]
+                    update(i, "bullets", [...item.bullets, ...bullets])
+                    setAiAssistIndex(null)
+                  }}
+                  existingItems={item.bullets}
+                  context={{ title: item.title, techStack: item.techStack, section: "projects" }}
+                  placeholder="Describe what you built for this project..."
+                  label="AI-assist: generate more bullet points"
+                />
+              </div>
+            )}
           </div>
         ))}
       </div>
-      <button onClick={add} className="mt-4 flex items-center gap-2 text-sm font-medium text-primary hover:underline">
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-        </svg>
-        Add Project
-      </button>
+      <div className="mt-4 flex gap-2">
+        <button onClick={add} className="flex items-center gap-2 text-sm font-medium text-primary hover:underline">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          Add Project
+        </button>
+        <button
+          onClick={() => { setAiAddOpen(!aiAddOpen); setAiAddError(null); setAiAddInput("") }}
+          className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+          </svg>
+          Add with AI
+        </button>
+      </div>
+
+      {aiAddOpen && (
+        <div className="mt-4 space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+          <p className="text-sm font-medium text-foreground">Add project with AI</p>
+          <textarea
+            value={aiAddInput}
+            onChange={(e) => setAiAddInput(e.target.value)}
+            placeholder="Paste a GitHub link or briefly explain what you built..."
+            rows={3}
+            className="w-full rounded-xl border border-border bg-background p-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+          />
+          {aiAddError && (
+            <div className="rounded-lg bg-error/10 p-3 text-sm text-error">{aiAddError}</div>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={async () => {
+                if (!aiAddInput.trim()) return
+                setAiAddLoading(true)
+                setAiAddError(null)
+                try {
+                  const res = await fetch("/api/ai/generate-bullets", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ section: "project", rawInput: aiAddInput }),
+                  })
+                  if (!res.ok) {
+                    const err = await res.json()
+                    throw new Error(err.error || "Generation failed")
+                  }
+                  const result = await res.json()
+                  onChange([
+                    ...data,
+                    {
+                      title: result.title || "",
+                      techStack: result.techStack || [],
+                      bullets: result.bulletPoints || [],
+                      url: result.url || null,
+                    },
+                  ])
+                  setAiAddOpen(false)
+                  setAiAddInput("")
+                } catch (e) {
+                  setAiAddError(e instanceof Error ? e.message : "Something went wrong")
+                } finally {
+                  setAiAddLoading(false)
+                }
+              }}
+              disabled={!aiAddInput.trim() || aiAddLoading}
+              className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+            >
+              {aiAddLoading ? "Generating..." : "Generate"}
+            </button>
+            <button
+              onClick={() => { setAiAddOpen(false); setAiAddError(null); setAiAddInput("") }}
+              className="rounded-full border border-border px-5 py-2 text-sm font-medium transition-colors hover:bg-muted"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </SectionCard>
   )
 }
 
 function SkillsEditor({ data, onChange }: { data: Skills; onChange: (d: Skills) => void }) {
+  const [showAiAssist, setShowAiAssist] = useState(false)
+  const [aiAddOpen, setAiAddOpen] = useState(false)
+  const [aiAddInput, setAiAddInput] = useState("")
+  const [aiAddLoading, setAiAddLoading] = useState(false)
+  const [aiAddError, setAiAddError] = useState<string | null>(null)
   const addSkill = (category: keyof Skills) => {
     const val = prompt(`Add ${category} skill:`)
     if (val?.trim()) {
@@ -487,45 +683,108 @@ function SkillsEditor({ data, onChange }: { data: Skills; onChange: (d: Skills) 
             </div>
           </div>
         ))}
-      </div>
-    </SectionCard>
-  )
-}
 
-function BulletList({ items, onChange }: { items: string[]; onChange: (items: string[]) => void }) {
-  const add = () => onChange([...items, ""])
-  const update = (i: number, val: string) => {
-    const next = items.map((item, idx) => (idx === i ? val : item))
-    onChange(next)
-  }
-  const remove = (i: number) => onChange(items.filter((_, idx) => idx !== i))
-
-  return (
-    <div className="space-y-2">
-      {items.map((item, i) => (
-        <div key={i} className="flex gap-2">
-          <span className="mt-2.5 text-muted-foreground">•</span>
-          <input
-            type="text"
-            value={item}
-            onChange={(e) => update(i, e.target.value)}
-            className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary"
-            placeholder="Describe your accomplishment..."
-          />
-          <button onClick={() => remove(i)} className="mt-2 text-muted-foreground hover:text-error">
+        <div className="flex gap-2 border-t border-border pt-4">
+          <button
+            onClick={() => { setAiAddOpen(!aiAddOpen); setAiAddError(null); setAiAddInput("") }}
+            className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+          >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
             </svg>
+            Add with AI
+          </button>
+          <button
+            onClick={() => setShowAiAssist(!showAiAssist)}
+            className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9" />
+            </svg>
+            {showAiAssist ? "Close" : "Categorize existing"}
           </button>
         </div>
-      ))}
-      <button onClick={add} className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
-        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-        </svg>
-        Add bullet
-      </button>
-    </div>
+
+        {aiAddOpen && (
+          <div className="mt-2 space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+            <p className="text-sm font-medium text-foreground">Add skills with AI</p>
+            <textarea
+              value={aiAddInput}
+              onChange={(e) => setAiAddInput(e.target.value)}
+              placeholder="List your skills (e.g. 'Python, React, TypeScript, Docker, AWS, PostgreSQL')..."
+              rows={3}
+              className="w-full rounded-xl border border-border bg-background p-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+            />
+            {aiAddError && (
+              <div className="rounded-lg bg-error/10 p-3 text-sm text-error">{aiAddError}</div>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  if (!aiAddInput.trim()) return
+                  setAiAddLoading(true)
+                  setAiAddError(null)
+                  try {
+                    const res = await fetch("/api/ai/generate-bullets", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ section: "skills", rawInput: aiAddInput }),
+                    })
+                    if (!res.ok) {
+                      const err = await res.json()
+                      throw new Error(err.error || "Generation failed")
+                    }
+                    const result = await res.json()
+                    onChange({
+                      languages: [...new Set([...data.languages, ...(result.languages || [])])],
+                      frameworks: [...new Set([...data.frameworks, ...(result.frameworks || [])])],
+                      tools: [...new Set([...data.tools, ...(result.tools || [])])],
+                    })
+                    setAiAddOpen(false)
+                    setAiAddInput("")
+                  } catch (e) {
+                    setAiAddError(e instanceof Error ? e.message : "Something went wrong")
+                  } finally {
+                    setAiAddLoading(false)
+                  }
+                }}
+                disabled={!aiAddInput.trim() || aiAddLoading}
+                className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+              >
+                {aiAddLoading ? "Generating..." : "Generate"}
+              </button>
+              <button
+                onClick={() => { setAiAddOpen(false); setAiAddError(null); setAiAddInput("") }}
+                className="rounded-full border border-border px-5 py-2 text-sm font-medium transition-colors hover:bg-muted"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {showAiAssist && (
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+            <AIAssistedContent
+              section="skills"
+              onAccept={(items) => {
+                const s = items as Record<string, string[]>
+                onChange({
+                  languages: [...new Set([...data.languages, ...(s.languages || [])])],
+                  frameworks: [...new Set([...data.frameworks, ...(s.frameworks || [])])],
+                  tools: [...new Set([...data.tools, ...(s.tools || [])])],
+                })
+                setShowAiAssist(false)
+              }}
+              existingItems={data}
+              context={{ section: "skills" }}
+              placeholder="List all your skills (e.g., 'Python, React, Docker, AWS')..."
+              label="Paste raw skills and we'll categorize them"
+            />
+          </div>
+        )}
+      </div>
+    </SectionCard>
   )
 }
 
@@ -540,9 +799,11 @@ type GitHubRepo = {
 function IntegrationsEditor({
   githubUsername,
   onGithubUsernameChange,
+  onAddProject,
 }: {
   githubUsername: string | null
   onGithubUsernameChange: (v: string | null) => void
+  onAddProject?: (project: Project) => void
 }) {
   const [username, setUsername] = useState(githubUsername ?? "")
   const [repos, setRepos] = useState<GitHubRepo[]>([])
@@ -550,6 +811,10 @@ function IntegrationsEditor({
   const [fetching, setFetching] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [importing, setImporting] = useState(false)
+  const [aiAddOpen, setAiAddOpen] = useState(false)
+  const [aiAddInput, setAiAddInput] = useState("")
+  const [aiAddLoading, setAiAddLoading] = useState(false)
+  const [aiAddError, setAiAddError] = useState<string | null>(null)
 
   const handleConnect = useCallback(async () => {
     if (!username.trim()) return
@@ -722,16 +987,82 @@ function IntegrationsEditor({
             </button>
           </div>
         )}
+
+        <div className="border-t border-border pt-4">
+          <button
+            onClick={() => { setAiAddOpen(!aiAddOpen); setAiAddError(null); setAiAddInput("") }}
+            className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+            </svg>
+            {aiAddOpen ? "Close" : "Add project from description"}
+          </button>
+
+          {aiAddOpen && (
+            <div className="mt-3 space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+              <p className="text-sm font-medium text-foreground">
+                Describe your open source contribution or project
+              </p>
+              <textarea
+                value={aiAddInput}
+                onChange={(e) => setAiAddInput(e.target.value)}
+                placeholder="Explain what you built, the tech used, and your role..."
+                rows={3}
+                className="w-full rounded-xl border border-border bg-background p-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+              />
+              {aiAddError && (
+                <div className="rounded-lg bg-error/10 p-3 text-sm text-error">{aiAddError}</div>
+              )}
+              <div className="flex gap-2">
+                <button
+                  onClick={async () => {
+                    if (!aiAddInput.trim()) return
+                    setAiAddLoading(true)
+                    setAiAddError(null)
+                    try {
+                      const res = await fetch("/api/ai/generate-bullets", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ section: "project", rawInput: aiAddInput }),
+                      })
+                      if (!res.ok) {
+                        const err = await res.json()
+                        throw new Error(err.error || "Generation failed")
+                      }
+                      const result = await res.json()
+                      onAddProject?.({
+                        title: result.title || "",
+                        techStack: result.techStack || [],
+                        bullets: result.bulletPoints || [],
+                        url: result.url || null,
+                      })
+                      toast.success("Project added from AI description")
+                      setAiAddOpen(false)
+                      setAiAddInput("")
+                    } catch (e) {
+                      setAiAddError(e instanceof Error ? e.message : "Something went wrong")
+                    } finally {
+                      setAiAddLoading(false)
+                    }
+                  }}
+                  disabled={!aiAddInput.trim() || aiAddLoading}
+                  className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+                >
+                  {aiAddLoading ? "Generating..." : "Generate & Add"}
+                </button>
+                <button
+                  onClick={() => { setAiAddOpen(false); setAiAddError(null); setAiAddInput("") }}
+                  className="rounded-full border border-border px-5 py-2 text-sm font-medium transition-colors hover:bg-muted"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </SectionCard>
   )
 }
 
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold">{title}</h2>
-      {children}
-    </div>
-  )
-}

@@ -75,7 +75,7 @@ export function fillLatexTemplate(
   }
 
   for (let i = 1; i <= 10; i++) {
-    const exp: any = tailored.experience[i - 1] || experience[i - 1]
+    const exp: { role?: string; company?: string; startDate?: string; endDate?: string; dates?: string; techStack?: string[]; bullets?: string[]; url?: string } = tailored.experience[i - 1] || experience[i - 1]
     if (exp) {
       const title = `${exp.role} -- ${exp.company}`
       tex = tex.replace(new RegExp(`\\{\\{EXP_TITLE_${i}\\}\\}`, "g"), esc(title))
@@ -91,7 +91,7 @@ export function fillLatexTemplate(
         esc(Array.isArray(tech) ? tech.join(", ") : "")
       )
       for (let m = 1; m <= 5; m++) {
-        const bullet = exp.bullets[m - 1]
+        const bullet = exp.bullets?.[m - 1]
         tex = tex.replace(
           new RegExp(`\\{\\{EXP_BULLET_${i}_${m}\\}\\}`, "g"),
           bullet ? bulletLine(bullet) : ""
@@ -106,7 +106,7 @@ export function fillLatexTemplate(
   }
 
   for (let i = 1; i <= 10; i++) {
-    const proj: any = tailored.projects[i - 1] || projects[i - 1]
+    const proj: { title?: string; dates?: string; yearRange?: string; purpose?: string; techStack?: string[]; bullets?: string[]; url?: string } = tailored.projects[i - 1] || projects[i - 1]
     if (proj) {
       tex = tex.replace(new RegExp(`\\{\\{PROJ_NAME_${i}\\}\\}`, "g"), esc(String(proj.title ?? "")))
       const dates = proj.dates || proj.yearRange || ""
@@ -119,7 +119,7 @@ export function fillLatexTemplate(
         esc(Array.isArray(tech) ? tech.join(", ") : "")
       )
       for (let m = 1; m <= 5; m++) {
-        const bullet = proj.bullets[m - 1]
+        const bullet = proj.bullets?.[m - 1]
         tex = tex.replace(
           new RegExp(`\\{\\{PROJ_BULLET_${i}_${m}\\}\\}`, "g"),
           bullet ? bulletLine(bullet) : ""

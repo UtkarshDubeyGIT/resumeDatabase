@@ -9,12 +9,18 @@ Build the main dashboard where users can manage, edit, and expand their stored p
 1. **Dashboard Overview**:
    - Once logged in, the user sees their profile completeness score (e.g., "75% Complete").
    - A clean tabbed interface displays: Personal Details, Education, Experience, Projects, Skills, and Integrations.
-2. **GitHub Integration Hub**:
+2. **AI-Assisted Content Creation**:
+   - Each editable section (Experience, Projects, Skills) includes the universal AI-assisted content component.
+   - **Mode A — AI Generation**: User pastes a raw description of their work → AI generates ATS-friendly bullet points → user selects which to keep via checkboxes → only selected bullets are saved.
+   - **Mode B — Manual Input**: User types bullet points directly.
+   - **Mode C — Hybrid Edit**: Existing bullets are pre-populated (pre-checked); user can request AI rephrase/improve them.
+   - *See `docs/data_saving_planning.md` for the full specification.*
+3. **GitHub Integration Hub**:
    - The user navigates to the "Integrations" tab and connects their GitHub account.
    - The dashboard retrieves their public repositories.
    - The user selects which repositories they want to add as "Projects" in their profile.
-   - The system auto-fills fields like tech stack, project title, and link, and pulls README data to suggest description bullet points.
-3. **Manual Editing**:
+   - The system auto-fills fields like tech stack, project title, and link, and pulls README data to suggest description bullet points using the same AI component.
+4. **Manual Editing**:
    - Intuitive inline editing or form modals for each section.
    - Drag-and-drop ordering of projects and experience items.
 

@@ -1,7 +1,7 @@
 # Development Log — Resumint MVP
 
 > **Started**: 2026-06-13
-> **Status**: Phase 1 ✅ | Phase 2 ✅ | Phase 3 ✅
+> **Status**: Phase 1 ✅ | Phase 2 ✅ | Phase 3 ✅ | Phase 4 ✅ | Phase 5 in progress
 
 ---
 
@@ -126,9 +126,84 @@
 
 ### Next Steps
 
-Cleanup remaining:
-- [ ] Initialize shadcn/ui (`npx shadcn@latest init`)
+- [ ] Initialize shadcn/ui — **Abandoned**: replaced by custom `src/components/ui/` base components
 - [ ] Add edge case handling (large file errors, network failures)
 - [ ] Fix domain restriction error message (use `APIError`)
 
-Phase 4 — History & Templates
+### Phase 4 — History & Templates
+
+- [x] **F4.1.1–F4.4.5** — History dashboard, clone/edit/delete, template styling, glassmorphism, dark mode, animations, scrollbar, a11y
+- [x] LaTeX PDF compilation via `pdflatex` (replaces `window.print()`)
+- [x] Updated feature checklist: Phase 4 = 23/23
+
+---
+
+## 2026-06-17 — Phase 5: Design System Overhaul & AI-Assisted Content
+
+### Step 5.1 — Design System Foundation ✅
+- [x] Created `docs/ui_design.md` — full Tailwind v4 design system spec (colors, typography, glassmorphism, animations, components, a11y)
+- [x] Created `docs/data_saving_planning.md` — 3-Phase overview, Universal AI-Assisted Data Standardization rule, reusable content creation workflow spec
+- [x] Updated `globals.css` — expanded color palette (primary-light, accent-dark/light, warning), radius scale, Satoshi CDN import
+- [x] Updated `layout.tsx` — Inter + JetBrains Mono via `next/font/google`; Satoshi via CDN
+- [x] Created `src/components/ui/button.tsx` — 4 variants (primary/secondary/ghost/danger), 3 sizes, loading spinner
+- [x] Created `src/components/ui/input.tsx` — Input + Textarea with label/error/hint, placeholder styling
+- [x] Created `src/components/ui/badge.tsx` — 6 color variants (default/primary/accent/success/warning/error), 2 sizes
+- [x] Created `src/components/ui/card.tsx` — 3 variants (default/glass/interactive), 4 padding options
+- [x] Verified: `tsc --noEmit` + `npm run build` pass cleanly
+- [x] Updated `feature_checklist.md` — Phase 5 added (10/34 features completed)
+- [x] Updated `plan.md` — Phase 5 architecture, folder structure, API endpoints, Known Issues
+- [x] Updated `development_log.md` — Phase 5 entry
+
+### Bugfixes — Codebase Audit Findings
+- [x] **FIX BUG 1**: Styling API enum mismatch — UI sent `classic/modern/minimal`, API expected `minimalist/classic/tech`. Aligned UI to match API: `["classic", "tech", "minimalist"]`.
+- [x] **FIX BUG 2**: NaN year fields in EducationEditor — added `parseYear()` helper that validates 4-digit year pattern before `Number()` conversion.
+- [x] **FIX BUG 3**: CSS `@import` ordering — moved Satoshi font `@import` before `@import "tailwindcss"` to comply with CSS spec.
+- [x] **FIX BUG 4**: Moved `import { signIn }` from bottom of `page.tsx` (line 144) to top with other imports.
+
+### Planning Adjustments (from codebase audit)
+- **`POST /api/profile/save-bullets` NOT needed** — `PUT /api/profile` already supports partial section updates.
+- **AI component flow**: AI generates bullets → user selects → parent merges into local state → existing Save flow persists.
+- **Onboarding steps**: Each step calls `PUT /api/profile` incrementally; final step just redirects. No bulk save needed.
+
+### Step 5.2 — Universal AI Component ✅
+- [x] Built `POST /api/ai/generate-bullets` endpoint — accepts section type + raw input + optional context, returns structured data via OpenCode Zen
+- [x] Built `AIAssistedContent` component (`src/components/ai-assisted-content.tsx`) — 3 modes: AI generation with checkbox selection, manual input, hybrid edit
+- [x] Works for experience/projects (bullet points), skills (categorized), and summary (free text)
+
+### Step 5.3 — Onboarding Multi-Step Wizard (IN PROGRESS)
+- [ ] Refactor onboarding into wizard with step indicator
+- [ ] Integrate AI component for experience/skills/GitHub steps
+- [ ] Add skip functionality per step
+
+### Step 5.4 — Profile Dashboard AI Enhancement (COMPLETED)
+- [x] Integrated AI component into Experience editor (per-entry AI assist sparkle button)
+- [x] Integrated AI component into Projects editor (per-entry AI assist sparkle button)
+- [x] Integrated AI component into Skills editor (categorize raw skills)
+- [x] Shared `AIAssistedContent` component used across all 3 editors
+- [x] AI re-generation available via sparkle toggle per item
+
+## 2026-06-17 — Phase 5 Complete (Steps 2-4 + Polish)
+
+### Step 2 — Universal AI Component ✅
+- [x] Built `POST /api/ai/generate-bullets` — accepts `{section, rawInput, context}`, returns structured bullets/skills/summary
+- [x] Built `AIAssistedContent` component — 3 modes: AI gen with checkbox selection, manual input, hybrid edit
+- [x] Supports experience (bullet points), projects (bullet points), skills (categorized), summary (free text)
+
+### Step 3 — Onboarding Multi-Step Wizard ✅
+- [x] Refactored from single-step parse→review to 5-step wizard with `StepIndicator` component
+- [x] Step 1: PDF upload & parse; Step 2: AI-assist experience; Step 3: AI-assist projects; Step 4: AI-assist skills; Step 5: Review & save
+- [x] Back/Next/Skip per step, final review shows all editable sections
+
+### Step 4 — Profile Dashboard AI Integration ✅
+- [x] Sparkle icon (AI assist) added to each Experience and Project entry card
+- [x] AIAssistedContent component opens inline within the entry when toggled
+- [x] Skills section has AI categorization panel at the bottom
+- [x] Accepted items merged into existing data, close AI panel on accept
+
+### Pruned unused packages
+- [x] Removed `ai`, `@ai-sdk/openai`, `@google/generative-ai` (~10 packages, ~50MB)
+- [x] Build verified clean after removal
+
+### Summary
+- Phase 5: 37/38 features complete (only F5.3.9 — persisted wizard progress — deferred)
+- Total: 121/122 — essentially MVP-complete

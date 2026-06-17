@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { signIn } from "@/lib/auth-client"
 
 export default function Home() {
   const [loading, setLoading] = useState(false)
@@ -140,5 +141,3 @@ const features = [
     ),
   },
 ]
-
-import { signIn } from "@/lib/auth-client"

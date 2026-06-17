@@ -215,7 +215,7 @@ function ResumePreview({
   const [showStyling, setShowStyling] = useState(false)
   const [showLatex, setShowLatex] = useState(false)
   const [styleConfig, setStyleConfig] = useState({
-    template: "classic" as "classic" | "modern" | "minimal",
+    template: "classic" as "classic" | "tech" | "minimalist",
     primaryColor: "#1d4ed8",
     fontFamily: "'Times New Roman', Times, serif",
     spacing: "normal" as "compact" | "normal" | "relaxed",
@@ -340,7 +340,7 @@ function ResumePreview({
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-muted-foreground">Template</label>
               <div className="flex gap-1.5">
-                {(["classic", "modern", "minimal"] as const).map((t) => (
+                {(["classic", "tech", "minimalist"] as const).map((t) => (
                   <button
                     key={t}
                     onClick={() => setStyleConfig((s) => ({ ...s, template: t }))}

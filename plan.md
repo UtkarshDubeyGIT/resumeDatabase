@@ -96,15 +96,18 @@ resumemint/
 │   └── migrations/
 ├── public/
 │   └── assets/
+├── docs/
+│   ├── ui_design.md                    # Design system spec (NEW)
+│   └── data_saving_planning.md         # Data philosophy + AI component spec (NEW)
 ├── src/
 │   ├── app/
-│   │   ├── layout.tsx
+│   │   ├── layout.tsx                  # Updated: Inter + JetBrains Mono fonts
 │   │   ├── page.tsx                    # Landing page with Google Sign-In
-│   │   ├── globals.css                 # Tailwind entry + design tokens
+│   │   ├── globals.css                 # Tailwind v4 + Satoshi CDN + full design tokens
 │   │   ├── access-denied/
 │   │   │   └── page.tsx                # NSUT-only restriction page
 │   │   ├── onboarding/
-│   │   │   └── page.tsx                # Drag-drop PDF → parse → review → save
+│   │   │   └── page.tsx                # Multi-step wizard (refactored)
 │   │   ├── dashboard/
 │   │   │   └── page.tsx                # Post-onboarding dashboard
 │   │   ├── api/
@@ -112,14 +115,21 @@ resumemint/
 │   │   │   │   └── [...all]/route.ts   # Better Auth API handlers
 │   │   │   ├── resume/
 │   │   │   │   └── parse/route.ts      # POST: upload PDF → parse
-│   │   │   └── profile/
-│   │   │       └── save/route.ts       # POST: save initial profile
+│   │   │   ├── profile/
+│   │   │   │   ├── save/route.ts       # POST: save initial profile
+│   │   │   │   └── save-bullets/route.ts # POST: save AI-generated bullets (NEW)
+│   │   │   └── ai/
+│   │   │       └── generate-bullets/route.ts # POST: AI bullet generation (NEW)
 │   │   ├── tailor/                     # Phase 3
 │   │   ├── history/                    # Phase 4
 │   │   └── loading.tsx
 │   ├── components/
-│   │   ├── ui/                         # (pending shadcn init)
-│   │   └── ...
+│   │   ├── ui/                         # Base design system components
+│   │   │   ├── button.tsx              # (NEW) 4 variants, 3 sizes
+│   │   │   ├── input.tsx              # (NEW) Input + Textarea with label/error
+│   │   │   ├── badge.tsx              # (NEW) 6 color variants
+│   │   │   └── card.tsx               # (NEW) 3 variants, 4 padding options
+│   │   └── ai-assisted-content.tsx     # (NEW) Universal AI content component
 │   ├── lib/
 │   │   ├── prisma.ts                   # Prisma v7 singleton (PgAdapter)
 │   │   ├── auth.ts                     # Better Auth server config + getServerSession
@@ -127,8 +137,6 @@ resumemint/
 │   │   ├── ai.ts                       # Direct fetch → OpenCode Zen + JSON extraction
 │   │   ├── pdf-parser.ts               # pdf-parse v2 + AI extraction pipeline
 │   │   └── validators.ts               # Re-exports from pdf-parser
-│   ├── hooks/
-│   └── styles/
 ├── prisma.config.ts                    # Prisma v7 datasource URL config (required)
 ├── .env.local                          # 7 env vars (DB, Auth, OAuth, API key)
 ├── tsconfig.json
@@ -157,6 +165,8 @@ resumemint/
 | GET | `/api/history/[id]` | 4 | Fetch single historical resume |
 | DELETE | `/api/history/[id]` | 4 | Delete a historical resume |
 | PUT | `/api/history/[id]/styling` | 4 | Update style config for a resume |
+| POST | `/api/ai/generate-bullets` | 5 | AI bullet generation from raw text |
+| POST | `/api/profile/save-bullets` | 5 | Persist selected AI-generated bullets |
 
 ---
 
@@ -357,7 +367,35 @@ resumemint/
 
 ### Phase 3: Resume Tailoring & AI Generation ✅
 
-### Phase 4: History, Templates & Polish (Pending)
+### Phase 4: History, Templates & Polish ✅
+
+### Phase 5: Design System Overhaul & AI-Assisted Content Creation (In Progress)
+
+**Objective**: Refactor the entire UI layer with a proper design system (Satoshi/Inter fonts, glassmorphism, expanded palette). Build a universal AI-assisted content creation component that works across onboarding and profile management. Refactor onboarding into a multi-step wizard. Enhance the dashboard with AI-powered content creation.
+
+#### Step 5.1 — Design System Foundation ✅
+- Updated `globals.css` with expanded Tailwind v4 tokens (primary-light, accent-dark/light, warning, radius scale)
+- Satoshi headings (Fontshare CDN) + Inter body (`next/font/google`) + JetBrains Mono (fontsource)
+- Created base components: `Button`, `Input`/`Textarea`, `Badge`, `Card` in `src/components/ui/`
+- Created `docs/ui_design.md` and `docs/data_saving_planning.md`
+- `tsc --noEmit` + `npm run build` pass cleanly
+
+#### Step 5.2 — Universal AI Component (PLANNED)
+- `POST /api/ai/generate-bullets` — accepts raw text + section type → returns AI-generated bullet points
+- `AIAssistedContent` component — 3 modes: AI generation (textarea + generate button + checkbox selection), manual input, hybrid edit
+- `POST /api/profile/save-bullets` — persist selected bullets to profile
+- Reusable across experience, projects, skills sections
+
+#### Step 5.3 — Onboarding Multi-Step Wizard (PLANNED)
+- Refactor `src/app/onboarding/page.tsx` from single-step to multi-step wizard
+- Step 1: PDF upload & parse (existing)
+- Steps 2-4: Experience, Skills, GitHub via universal AI component
+- Step 5: Review & save
+- Each step skippable
+
+#### Step 5.4 — Profile Dashboard Enhancement (PLANNED)
+- Integrate the universal AI component into Experience/Projects/Skills editors on the profile page
+- Allow AI-assisted bullet generation for any existing item
 
 ---
 
@@ -373,6 +411,9 @@ resumemint/
 | **Multiple lockfiles warning** | Fix by adding `turbopack.root` to `next.config.ts`. Currently benign. |
 | **Dev server background process** | `Start-Process` fails with EPERM in this shell. Use `cmd /c start /B cmd /c "..."` with `--%` to bypass PS parser. |
 | **Domain restriction error swallowed** | The hook throws a plain `Error`, not `APIError`. Better Auth catches it and returns generic `"unable to create user"` because `isAPIError()` returns `false`. Fix: import `APIError` from `better-auth` and throw `new APIError("FORBIDDEN", ...)`. |
+| **shadcn/ui** | Not used — replaced by custom `src/components/ui/` base components (Button, Input, Badge, Card). |
+| **Satoshi font** | Not on Google Fonts or npm/fontsource. Loaded via Fontshare CDN `@import` in `globals.css`. Falls back to `system-ui` if CDN unreachable. |
+| **JetBrains Mono** | Installed via `@fontsource-variable/jetbrains-mono` (npm) for variable font support. |
 
 ## Environment Variables
 

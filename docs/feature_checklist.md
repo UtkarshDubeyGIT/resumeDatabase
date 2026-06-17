@@ -171,6 +171,57 @@
 
 ---
 
+## Phase 5: Design System & AI-Assisted Content Creation
+*Reference: [ui_design.md](file:///c:/Users/Dushy/OneDrive/Desktop/Projects/resumemint/docs/ui_design.md), [data_saving_planning.md](file:///c:/Users/Dushy/OneDrive/Desktop/Projects/resumemint/docs/data_saving_planning.md)*
+
+### 5.1 Design System Foundation (Step 1) ✅
+- [x] **F5.1.1** — Tailwind v4 CSS variables with expanded color palette (primary-light, accent-dark/light, warning)
+- [x] **F5.1.2** — Satoshi font for headings (via Fontshare CDN)
+- [x] **F5.1.3** — Inter font for body text (via `next/font/google`)
+- [x] **F5.1.4** — JetBrains Mono for code/monospace (via fontsource)
+- [x] **F5.1.5** — Base `Button` component: 4 variants (primary/secondary/ghost/danger), 3 sizes, loading state
+- [x] **F5.1.6** — Base `Input` component: with label/error/hint support; `Textarea` variant
+- [x] **F5.1.7** — Base `Badge` component: 6 color variants, 2 sizes
+- [x] **F5.1.8** — Base `Card` component: 3 variants (default/glass/interactive), 4 padding options
+- [x] **F5.1.9** — Design system documented in `docs/ui_design.md`
+- [x] **F5.1.10** — Data saving philosophy documented in `docs/data_saving_planning.md`
+- [x] **F5.1.11** — Shared `Field` component extracted (supports vertical + horizontal layout)
+- [x] **F5.1.12** — Shared `SectionCard` component extracted (sm/md spacing variants)
+- [x] **F5.1.13** — Shared `BulletList` component extracted (add/remove/edit bullets)
+- [x] **F5.1.14** — Onboarding + profile pages refactored to use shared components
+
+### 5.2 Universal AI-Assisted Content Component (Step 2) ✅
+- [x] **F5.2.1** — AI bullet generation API endpoint `POST /api/ai/generate-bullets`
+- [x] **F5.2.2** — `AIAssistedContent` component with 3 modes (AI generation, manual, hybrid)
+- [x] **F5.2.3** — Raw text input area for user descriptions
+- [x] **F5.2.4** — "Generate with AI" button with loading state
+- [x] **F5.2.5** — Checkbox-based selection UI for AI-generated suggestions
+- [x] **F5.2.6** — "Accept Selected" + "Reject & try again" actions
+- [x] **F5.2.7** — Manual bullet input mode (no AI)
+- [x] **F5.2.8** — Hybrid edit mode (pre-populated items + AI refine option)
+- [x] **F5.2.9** — Works across experience, projects, skills, and summary sections
+- [x] **F5.2.10** — Covered by existing `PUT /api/profile` (no separate endpoint needed)
+
+### 5.3 Onboarding Multi-Step Wizard (Step 3) ✅
+- [x] **F5.3.1** — Multi-step wizard layout with step indicator / progress bar
+- [x] **F5.3.2** — Step 1: PDF upload & parse (existing flow, refactored into wizard)
+- [x] **F5.3.3** — Step 2: Add experience entries via AI-assisted component
+- [x] **F5.3.4** — Step 3: Add skills via AI-assisted component
+- [x] **F5.3.5** — Step 4: Projects with AI-assisted component
+- [x] **F5.3.6** — Step 5: Review all sections & save to database
+- [x] **F5.3.7** — Each step has "Skip" option (no data required)
+- [x] **F5.3.8** — Back/Next navigation between steps
+- [ ] **F5.3.9** — Progress persisted in case of browser refresh (future enhancement)
+
+### 5.4 Profile Dashboard AI Integration (Step 4) ✅
+- [x] **F5.4.1** — AI-assisted content creation integrated into Experience editor
+- [x] **F5.4.2** — AI-assisted content creation integrated into Projects editor
+- [x] **F5.4.3** — AI-assisted content creation integrated into Skills editor
+- [x] **F5.4.4** — Reusable `AIAssistedContent` component shared across all sections
+- [x] **F5.4.5** — Ability to re-generate AI suggestions for existing items
+
+---
+
 ## Summary Counts
 
 | Phase | Features | Completed |
@@ -179,7 +230,8 @@
 | Phase 2: Profile Dashboard | 21 | 21/21 |
 | Phase 3: Resume Tailoring | 18 | 18/18 |
 | Phase 4: History & Polish | 23 | 23/23 |
-| **Total** | **84** | **84/84** |
+| Phase 5: Design System & AI Content | 38 | 37/38 |
+| **Total** | **122** | **121/122** |
 
 ---
 
