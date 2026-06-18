@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express"
-import { auth } from "../../src/config/auth"
+import { auth } from "../../../src/config/auth"
 
 export async function requireSession(req: Request, res: Response, next: NextFunction) {
   try {
