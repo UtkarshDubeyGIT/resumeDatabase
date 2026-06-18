@@ -13,7 +13,8 @@ WORKDIR /app
 # Copy root package.json (contains shared deps: better-auth, prisma, zod, pdf-parse, etc.)
 COPY package.json package-lock.json* ./
 COPY prisma/ ./prisma/
-RUN npm install && npx prisma generate
+COPY prisma.config.ts ./
+RUN npm install
 
 # Copy shared source code
 COPY src/core/ ./src/core/
