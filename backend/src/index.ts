@@ -10,7 +10,13 @@ const app = new Hono()
 const frontendUrl = process.env.VERCEL_FRONTEND_URL || 'http://localhost:3000'
 
 app.use('*', cors({
-  origin: frontendUrl,
+  origin: (origin) => {
+    if (!origin) return frontendUrl;
+    if (origin.endsWith('.vercel.app') || origin.includes('localhost')) {
+      return origin;
+    }
+    return frontendUrl;
+  },
   allowHeaders: ['Content-Type', 'Authorization'],
   allowMethods: ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE'],
   credentials: true,
