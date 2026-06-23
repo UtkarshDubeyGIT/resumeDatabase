@@ -17,6 +17,13 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
     },
   },
+  trustedOrigins: [process.env.VERCEL_FRONTEND_URL || "http://localhost:3000"],
+  advanced: {
+    defaultCookieAttributes: {
+      sameSite: "none",
+      secure: true,
+    },
+  },
   plugins: [],
   databaseHooks: {
     user: {
